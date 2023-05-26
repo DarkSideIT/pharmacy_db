@@ -107,266 +107,348 @@
 
 ## Взаимосвязи:
 
-![image](links.png)
+![image](https://sun9-29.userapi.com/impg/HvBYOEQMKMTZHBma-pUnSBnqLgSej0h6ieAr1w/EdfJIGyBnY0.jpg?size=1280x710&quality=96&sign=aeaa906a2ef0acf2ea289b80e87055b7&type=album)
 
 
-* Один сотрудник может занимать только одну должность, но на одной должности может работать несколько сотрудников.
-* Один сотрудник может обслуживать несколько бронирований, но каждое бронирование обслуживается только одним сотрудником.
-* Один клиент может забронировать несколько номеров в разные периоды, но каждое бронирование может быть сделано только одним клиентом.
-* Один номер может быть забронирован несколько раз в разные периоды, но каждое бронирование может быть только для одного номера.
-* Каждое бронирование может быть связано только с одним платежом, и каждый платеж может быть связан только с одним бронированием.
+* Связь между таблицами "Сотрудники" и "Заказы":
+
+Поле "id_сотрудника" в таблице "Заказы" связано с полем "id" в таблице "Сотрудники". Эта связь позволяет определить, какой сотрудник отвечает за выполнение заказа.
+* Связь между таблицами "Препараты" и "Заказы":
+
+Поле "id_препарата" в таблице "Заказы" связано с полем "id" в таблице "Препараты". Эта связь позволяет указать, какие препараты заказаны в конкретном заказе.
+* Связь между таблицами "Сотрудники" и "Покупки":
+
+Поле "id_сотрудника" в таблице "Покупки" связано с полем "id" в таблице "Сотрудники". Эта связь позволяет определить, какой сотрудник осуществил покупку.
+* Связь между таблицами "Препараты" и "Покупки":
+
+Поле "id_препарата" в таблице "Покупки" связано с полем "id" в таблице "Препараты". Эта связь позволяет указать, какие препараты были приобретены в конкретной покупке.
+* Связь между таблицами "Клиенты" и "Рецепты":
+
+Поле "id_клиента" в таблице "Рецепты" связано с полем "id" в таблице "Клиенты". Эта связь позволяет определить, какому клиенту принадлежит конкретный рецепт.
+* Связь между таблицами "Препараты" и "Рецепты":
+
+Поле "id_препарата" в таблице "Рецепты" связано с полем "id" в таблице "Препараты". Эта связь позволяет указать, какие препараты указаны в конкретном рецепте.
+* Связь между таблицами "Заказы" и "Статусы_заказов":
+
+Поле "статус" в таблице "Заказы" связано с полем "id" в таблице "Статусы_заказов". Эта связь позволяет указать статус заказа, такой как "Ожидает выполнения", "Выполнен" или "Отменен".
 
 ## Представления:
 
-1. Список номеров по типу и статусу (search_Hotel_rooms):
+1. Заказы с препаратами:
 
-Представление позволяет получить информацию о номерах. Оно отображает номера по типу и статусу.
+* Описание: Данное представление позволяет получить информацию о заказах с указанием сотрудника, препарата, количества и статуса.
+* Структура:
+id - идентификатор заказа
+employee - имя сотрудника, связанного с заказом
+preparation - название препарата, связанного с заказом
+quantity - количество препарата в заказе
+status - статус заказа
 
 ```sql
-CREATE VIEW search_Hotel_rooms AS SELECT r.room_id, r.room_number, r.room_type, r.room_price_per_night, r.room_status FROM Hotel_rooms r;
+CREATE VIEW orders_with_preparations AS
+SELECT orders.id, employees.secondname AS emp, preparations.name AS prep, orders.quantity, orders.status
+FROM orders
+JOIN employees ON orders.id_employee = employees.id
+JOIN preparations ON orders.id_preparation = preparations.id;
 ```
 
-2. Список сотрудников с их должностями и зарплатами(Employees_list):
+2. Покупки с препаратами:
 
-Представление позволяет получить информацию о сотрудниках. Оно отображает должности и зарплаты  всех сотрудников.
+* Описание: Данное представление позволяет получить информацию о покупках с указанием сотрудника, препарата, количества и суммы.
+* Структура:
+id - идентификатор покупки
+employee - имя сотрудника, связанного с покупкой
+preparation - название препарата, связанного с покупкой
+quantity - количество препарата в покупке
+amount - сумма покупки
 
 ```sql
-CREATE VIEW Employees_list AS
-SELECT 
-    CONCAT_WS(' ', first_name, last_name, IFNULL(middle_name, '')) AS full_name,
-    position,
-    salary
-FROM 
-    Employees 
-    JOIN Positions ON Employees.position_id = Positions.position_id;
+CREATE VIEW purchases_wwith_preparations AS
+SELECT purchases.id, employees.secondname AS emp, preparations.name AS prep, purchases.quantity, purchases.amount
+FROM purchases
+JOIN employees ON purchases.id_employee = employees.id
+JOIN preparations ON purchases.id_preparation = preparations.id;
 ```
 
-3. Заработок отеля за последний месяц():
+3. Клиенты с рецептами:
 
-Представление позволяет получить информацию о заработке отеля за последний месяц.
+* Описание: Данное представление позволяет получить информацию о клиентах с указанием их рецептов и препаратов.
+* Структура:
+id - идентификатор клиента
+firstname - имя клиента
+secondname - фамилия клиента
+id_preparation - идентификатор препарата в рецепте
+preparation - название препарата в рецепте
+date - дата рецепта
 
 ```sql
-CREATE VIEW Hotel_earnings_for_the_last_month AS SELECT SUM(amount) AS total FROM Payments WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH);
+CREATE VIEW clients_with_prescriptions AS
+SELECT clients.id, clients.firstname, clients.secondname, prescriptions.id_preparation, preparations.name AS prep, preparations.date
+FROM clients
+JOIN prescriptions ON clients.id = prescriptions.id_client
+JOIN preparations ON prescriptions.id_preparation = preparations.id;
 ```
 
-4. 
-
-Представление позволяет получить контактную информацию о клиентах, которые зарезервировали номер, а также идентификатор номера. 
-
+4. Сотрудники_с_должностями
+* Описание: Данное представление позволяет получить информацию о сотрудниках с указанием их должностей.
+* Структура:
+id - идентификатор сотрудника
+имя - имя сотрудника
+фамилия - фамилия сотрудника
+должность - должность сотрудника
 ```sql
-CREATE VIEW Clients_who_have_booked_rooms AS SELECT CONCAT_WS(' ', first_name, last_name, IFNULL(middle_name, '')) AS full_name, b.room_id, c.email, c.phone FROM Clients c INNER JOIN Bookings b ON c.customer_id = b.customer_id WHERE b.booking_status = 'reserved';
+CREATE VIEW employees_with_positions AS
+SELECT employees.id, employees.firstname, employees.secondname, employees.position
+FROM employees;
 ```
 
 
 ## Код SQL для создания таблиц:
 
 ```sql
-CREATE TABLE `Positions` (
-  `position_id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  `position` varchar(50) NOT NULL,
-  `salary` decimal(10,2) NOT NULL
+create table if not EXISTS order_statuses(
+    `id` int(10) primary key not null auto_increment,
+    `name` varchar(50)
 );
 
-CREATE TABLE `Employees` (
-  `employee_id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  `first_name` varchar(30) NOT NULL,
-  `last_name` varchar(30) NOT NULL,
-  `middle_name` varchar(30) DEFAULT NULL,
-  `email` varchar(50) UNIQUE NOT NULL,
-  `phone` varchar(20) UNIQUE NOT NULL,
-  `date_of_birth` date NOT NULL,
-  `gender` enum('male','female') NOT NULL,
-  `position_id` int NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT `staff_ibfk_1` FOREIGN KEY (`position_id`) REFERENCES `Positions` (`position_id`)
+
+create table if not EXISTS employees(
+    `id` int(10) primary key auto_increment not null,
+    `firstname` varchar(50) not null,
+    `secondname` varchar(50) not null,
+    `address` varchar(100) not null,
+    `position` varchar(50) not null,
+    `phone number` varchar(20) not null
 );
 
-CREATE TABLE `Clients` (
-  `customer_id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  `first_name` varchar(30) NOT NULL,
-  `last_name` varchar(30) NOT NULL,
-  `middle_name` varchar(30) DEFAULT NULL,
-  `email` varchar(50) UNIQUE NOT NULL,
-  `phone` varchar(20) UNIQUE NOT NULL,
-  `date_of_birth` date NOT NULL,
-  `gender` enum('male','female') NOT NULL,
-  `passport` varchar(50) UNIQUE NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+create table if not EXISTS suppliers(
+    `id` int(10) primary key not null auto_increment,
+    `name` varchar(100) not null,
+    `address` varchar(100) not null,
+    `phone number` varchar(20) not null
 );
 
-CREATE TABLE `Hotel_rooms` (
-  `room_id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  `room_number` smallint UNIQUE NOT NULL,
-  `room_type` enum('standart', 'comfort', 'family', 'business', 'presidential') NOT NULL,
-  `room_price_per_night` decimal(10,2) NOT NULL,
-  `room_status` enum('free','booked','serviced') NOT NULL DEFAULT 'free'
+
+create table if not EXISTS preparations(
+    `id` int(10) primary key not null auto_increment,
+    `name` varchar(100) not null,
+    `manufacturer` varchar(100) not null,
+    `price` decimal(10, 2) not null,
+    `quantity` int(5) not null
 );
 
-CREATE TABLE `Bookings` (
-  `booking_id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  `customer_id` int NOT NULL,
-  `employee_id` int NOT NULL,
-  `room_id` int NOT NULL,
-  `check_in_date` date NOT NULL,
-  `check_out_date` date NOT NULL,
-  `num_of_guests` int NOT NULL,
-  `booking_status` enum('reserved','checked_in','checked_out','cancelled') NOT NULL DEFAULT 'reserved',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `Clients` (`customer_id`),
-  CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `Employees` (`employee_id`),
-  CONSTRAINT `bookings_ibfk_3` FOREIGN KEY (`room_id`) REFERENCES `Hotel_rooms` (`room_id`)
+
+create table if not EXISTS orders(
+    `id` int(10) primary key not null auto_increment,
+    `id_employee` int(10) not null,
+    `id_preparation` int(10) not null,
+    `order_date` date not null,
+    `status` int(10) not null,
+    `quantity` int(10) not null,
+    foreign key (`id_employee`) references employees (`id`),
+    foreign key (`id_preparation`) references preparations (`id`),
+    foreign key (`status`) references order_statuses (`id`)
 );
 
-CREATE TABLE `Payments` (
-  `payment_id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  `booking_id` int UNIQUE NOT NULL, 
-  `amount` decimal(10,2) NOT NULL,
-  `payment_method` enum('credit_card','debit_card','cash') NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `Bookings` (`booking_id`)
+
+create table if not EXISTS purchases(
+    `id` int(10) primary key not null auto_increment,
+    `id_employee` int(10) not null,
+    `id_preparation` int(10) not null,
+    `purchase_date` date not null,
+    `quantity` int(10) not null,
+    `amount` decimal(10, 2) not null,
+    foreign key (`id_employee`) references employees(`id`),
+    foreign key (`id_preparation`) references preparations(`id`)
+);
+
+
+create table if not EXISTS clients(
+    `id` int(10) primary key not null auto_increment,
+    `firstname` varchar(50) not null,
+    `secondname` varchar(50) not null,
+    `patronymic` varchar(50) not null,
+    `address` varchar(100) not null,
+    `phone number` varchar(20) not null
+);
+
+
+create table if not EXISTS prescriptions(
+    `id` int(10) primary key not null auto_increment,
+    `id_client` int(10) not null,
+    `id_preparation` int(10) not null,
+    `date_prescription` date not null,
+    foreign key (`id_client`) references clients(`id`),
+    foreign key (`id_preparation`) references preparations(`id`)
 );
 ```
 # Примеры запросов SQL для типовых операций:
 
-## Positions
+## employees
 
-###  Создание записи в таблице Positions
-
-```sql
-INSERT INTO Positions (position, salary) VALUES 
-('Администратор отеля', 100000.00),
-('Швейцар', 35000.00),
-('Горничная ', 50000.00),
-('Повар ', 60000.00),
-('Консьерж', 45000.00);
-```
-Этот запрос создает записи с информацией о должностях и их зарплатах.
-
-### Изменение записи в таблице Positions
+###  Создание записи о сотруднике
 
 ```sql
-UPDATE `Positions` SET salary=25000.00 WHERE position_id= 2;
+INSERT INTO employees (`id`, `firstname`, `secondname`, `address`, `position`, `phone number`)
+VALUES (1, 'Иван', 'Иванов', 'ул. Центральная 1', 'Фармацевт', '+123456789');
 ```
+Этот запрос создает записи с информацией о сотрyднике.
 
-Этот запрос изменяет заработную плату у занимаемой должности.
-
-### Удаление записи из таблицы Positions
+### Изменение записи в таблице employees
 
 ```sql
-DELETE FROM `Positions` WHERE `position_id` = 5;
+UPDATE employees
+SET `position` = 'Старший фармацевт'
+WHERE `id` = 1;
 ```
 
-Этот запрос удаляет информацию о  должности с идентификатором 5
+Этот запрос изменяет должность у сотрyдника.
 
-## Employees
-
-### Создание записи в таблице Employees
+### Удаление записи из таблицы employees
 
 ```sql
-INSERT INTO `Employees` (first_name, last_name, middle_name, email, phone, date_of_birth, gender, position_id) 
-VALUES ('Артём', 'Быстров', 'Денисович', 'artem@gmail.com', '89500500344', '2003-09-08', 'male', 3);
+DELETE FROM employees
+WHERE `id` = 1;
 ```
 
-Этот запрос создает запись с информацией о сотруднике.
+Этот запрос удаляет информацию о  должности с идентификатором 1
 
-### Изменение записи в таблице Employees
+## suppliers
+
+### Создание записи в таблице suppliers
 
 ```sql
-UPDATE `Employees` SET email='bistrof@example.com' WHERE employee_id = 2;
+INSERT INTO suppliers (`id`, `name`, `address`, `phone number`)
+VALUES (1, 'ООО "Фарма-Групп"', 'ул. Поставщиковская 10', '+987654321');
 ```
 
-Этот запрос изменяет email сотрудника, у которого идентификатор равен 2.
+Этот запрос создает запись с информацией о поставщике.
 
-
-
-### Удаление записи из таблицы Employees
+### Обновление записи в таблице suppliers
 
 ```sql
-DELETE FROM `Employees` WHERE employee_id= 3;
+UPDATE suppliers
+SET `name` = 'ООО "ФармПром"'
+WHERE `id` = 1;
 ```
 
-Этот запрос удаляет запись о сотруднике с идентификатором 3.
+Этот запрос изменяет наименование поставщика, у которого идентификатор равен 1.
 
-## Clients
 
-### Создание записи в таблице Clients
+
+### Удаление записи из таблицы suppliers
 
 ```sql
-INSERT INTO `Clients` (first_name, last_name, middle_name, email, phone, date_of_birth, gender, passport) VALUES ('Данила', 'Иващенко', 'Максимович', 'danila@vs.com', '89500490345', '2000-01-04', 'male', '134679852');
+DELETE FROM suppliers
+WHERE `id` = 1;
 ```
 
-Этот запрос добавляет информацию о клиенте.
+Этот запрос удаляет запись о поставщике с идентификатором 1.
 
-### Изменение записи в таблице Clients
+## preparations
+
+### Создание записи в таблице preparations
 
 ```sql
-UPDATE `Clients` SET phone='89500498745' WHERE customer_id = 2;
+INSERT INTO preparations (id, `name`, `manufacturer`, `price`, `quantity`)
+VALUES (1, 'Анальгин', 'Фармкомпания "Медикамент"', 50.00, 100);
 ```
 
-Этот запрос изменяет номер телефона у клиента с идентификатором 2.
+Этот запрос добавляет информацию о препарате.
 
-### Удаление записи из таблицы Clients
+### Изменение записи в таблице preparations
 
 ```sql
-DELETE FROM `Clients` WHERE customer_id = 2;
+UPDATE preparations
+SET `price` = 55.00
+WHERE `id` = 1;
 ```
 
-Этот запрос удаляет запись о клиенте с идентификатором 2.
+Этот запрос изменяет ценy препарата с идентификатором 1.
 
-## Hotel_rooms
-
-### Создание записи в таблице Hotel_rooms
+### Удаление записи из таблицы preparations
 
 ```sql
-INSERT INTO `Hotel_rooms` (room_number, room_type, room_price_per_night, room_status) VALUES (203, 'comfort', 2500.00, 'free');
+DELETE FROM preparations
+WHERE `id` = 1;
 ```
 
-Этот запрос добавляет информацию о номере.
+Этот запрос удаляет запись о препарате с идентификатором 1.
 
-### Изменение записи в таблице Hotel_rooms
+## orders
+
+### Создание записи в таблице orders
 
 ```sql
-UPDATE `Hotel_rooms` SET room_price_per_night=3000.00 WHERE room_id= 3;
+INSERT INTO orders (`id`, `id_employee`, `id_preparation`, `order_date`, `status`, `quantity`)
+VALUES (1, 1, 1, '2023-05-25', 1, 10);
 ```
 
-Этот запрос изменяет информацию о номере с идентификатором 3.
+Этот запрос добавляет информацию о новом заказе.
 
-### Удаление записи из таблицы Hotel_rooms
+### Изменение записи в таблице orders
 
 ```sql
-DELETE FROM `Hotel_rooms` WHERE room_number = 203;
+UPDATE orders
+SET `quantity` = 15
+WHERE `id` = 1;
 ```
 
-Этот запрос удаляет запись о комнате с номером 203.
+Этот запрос изменяет количество товара с идентификатором 1.
 
-## Bookings
-
-### Добавление бронирования номера в таблицу Bookings
+### Удаление записи из таблицы orders
 
 ```sql
-INSERT INTO bookings (customer_id, employee_id, room_id, check_in_date, check_out_date, num_of_guests, booking_status) 
-VALUES (1, 1, 1, '2023-06-01', '2023-06-03', 1, 'reserved');
+DELETE FROM orders
+WHERE `id` = 1;
 ```
 
-## Payments
+Этот запрос удаляет запись о заказе с номером 1.
 
-### Добавление платежа в таблицу Payments
+## purchases
+
+### Добавление покyпки в таблицу purchases
 
 ```sql
-INSERT INTO payments (booking_id, amount, payment_method) 
-VALUES (1, 2000.00, 'credit_card');
+INSERT INTO purchases (id, `id_employee`, `id_preparation`, `purchase_date`, `quantity`, `amount`)
+VALUES (1, 1, 1, '2023-05-25', 10, 109.90);
 ```
+
+Этот запрос добавляет информацию о покyпке.
+
+### Изменение записи в таблице purchases
+
+```sql
+UPDATE purchases
+SET `quantity` = 15,
+    `amount` = 164.85
+WHERE `id` = 1;
+```
+
+Этот запрос изменяет информацию о покyпке с идентификатором 1.
+
+### Удаление записи из таблицы purchases
+
+DELETE FROM purchases
+WHERE `id` = 1;
+
+Этот запрос yдаляет информацию о покyпке с идентификатором 1.
 
 ## Изменение статусов 
 
-### Изменение статуса номера в таблице Hotel_rooms
+### Отметка о выполнении заказа
 
 ```sql
-UPDATE `Hotel_rooms` SET room_status='booked' WHERE room_id= 1;
+UPDATE orders
+SET `status` = 2 -- Изменить статус на "Выполнен"
+WHERE `id` = `id_client`;
 ```
 
-### Изменение статуса бронирования таблице Bookings
+### Изменение статуса заказа
 
 ```sql
-UPDATE `Hotel_rooms` SET room_status='booked' WHERE room_id= 1;
+UPDATE orders
+SET `status` = 3 -- Изменить статус на "Отменен"
+WHERE `id` = `id_client`;
 ```
